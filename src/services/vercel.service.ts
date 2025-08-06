@@ -53,8 +53,9 @@ export class VercelService {
       };
 
     } catch (error) {
-      logger.error(`Vercel deployment failed`, { deploymentId, error: error.message });
-      throw new Error(`Vercel deployment failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Vercel deployment failed`, { deploymentId, error: errorMessage });
+      throw new Error(`Vercel deployment failed: ${errorMessage}`);
     }
   }
 
@@ -99,7 +100,8 @@ export class VercelService {
         waited += pollInterval;
 
       } catch (error) {
-        logger.error(`Error checking deployment status`, { deploymentId, vercelDeploymentId, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error(`Error checking deployment status`, { deploymentId, vercelDeploymentId, error: errorMessage });
         throw error;
       }
     }
@@ -142,7 +144,8 @@ export class VercelService {
         ],
       };
     } catch (error) {
-      logger.error(`Failed to get rollback info`, { deploymentId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to get rollback info`, { deploymentId, error: errorMessage });
       return {
         canRollback: false,
         previousVersion: null,

@@ -155,6 +155,9 @@ export class DeploymentAgent {
 
     } catch (error) {
       const endTime = new Date();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+      
       const errorResult: DeploymentResult = {
         ...result,
         status: 'failed',
@@ -163,9 +166,9 @@ export class DeploymentAgent {
           {
             timestamp: new Date(),
             level: 'error',
-            message: `Deployment failed: ${error.message}`,
+            message: `Deployment failed: ${errorMessage}`,
             service: 'deployment-agent',
-            metadata: { error: error.stack },
+            metadata: { error: errorStack },
           },
         ],
         endTime,
@@ -174,12 +177,12 @@ export class DeploymentAgent {
 
       this.activeDeployments.set(deploymentId, errorResult);
       
-      logger.error(`Deployment failed`, { deploymentId, error: error.message });
+      logger.error(`Deployment failed`, { deploymentId, error: errorMessage });
 
       await Promise.allSettled([
         this.notificationService.notifyOrchestrator(errorResult),
         this.notificationService.logToNotion(errorResult),
-        this.notificationService.sendAlert(deploymentId, 'failure', error.message),
+        this.notificationService.sendAlert(deploymentId, 'failure', errorMessage),
       ]);
 
       return errorResult;
@@ -209,10 +212,11 @@ export class DeploymentAgent {
           throw new Error(`Unknown deployment target: ${artifact.deploymentTarget}`);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Artifact deployment failed`, { 
         deploymentId, 
         artifactName: artifact.name, 
-        error: error.message 
+        error: errorMessage 
       });
       throw error;
     }
@@ -256,7 +260,8 @@ export class DeploymentAgent {
       return rollbackInfo;
 
     } catch (error) {
-      logger.error(`Failed to generate rollback info`, { deploymentId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to generate rollback info`, { deploymentId, error: errorMessage });
       return {
         canRollback: false,
         previousVersion: null,
@@ -305,12 +310,13 @@ export class DeploymentAgent {
       return rollbackResult;
 
     } catch (error) {
-      const rollbackResult = { success: false, message: `Rollback failed: ${error.message}` };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const rollbackResult = { success: false, message: `Rollback failed: ${errorMessage}` };
       
-      logger.error(`Rollback failed`, { deploymentId, error: error.message });
+      logger.error(`Rollback failed`, { deploymentId, error: errorMessage });
 
       await this.notificationService.notifyRollbackComplete(deploymentId, rollbackResult);
-      await this.notificationService.sendAlert(deploymentId, 'rollback', error.message);
+      await this.notificationService.sendAlert(deploymentId, 'rollback', errorMessage);
 
       return rollbackResult;
     }

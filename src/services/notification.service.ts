@@ -58,9 +58,10 @@ export class NotificationService {
       logger.info(`Orchestrator notified successfully`, { deploymentId: deploymentResult.id });
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Failed to notify orchestrator`, { 
         deploymentId: deploymentResult.id, 
-        error: error.message 
+        error: errorMessage 
       });
       // Don't throw - notification failure shouldn't fail the deployment
     }
@@ -122,8 +123,8 @@ export class NotificationService {
 
       // Remove undefined properties
       Object.keys(notionPage.properties).forEach(key => {
-        if (notionPage.properties[key] === undefined) {
-          delete notionPage.properties[key];
+        if ((notionPage.properties as any)[key] === undefined) {
+          delete (notionPage.properties as any)[key];
         }
       });
 
@@ -135,9 +136,10 @@ export class NotificationService {
       logger.info(`Deployment logged to Notion successfully`, { deploymentId: deploymentResult.id });
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Failed to log to Notion`, { 
         deploymentId: deploymentResult.id, 
-        error: error.message 
+        error: errorMessage 
       });
       // Don't throw - logging failure shouldn't fail the deployment
     }
@@ -195,9 +197,10 @@ export class NotificationService {
       await this.notionClient.post('/pages', logPage);
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Failed to create detailed log entry in Notion`, { 
         deploymentId: deploymentResult.id, 
-        error: error.message 
+        error: errorMessage 
       });
     }
   }
@@ -225,11 +228,12 @@ export class NotificationService {
       logger.error(`Deployment alert: ${alertType}`, { deploymentId, message });
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Failed to send alert`, { 
         deploymentId, 
         alertType, 
         message, 
-        error: error.message 
+        error: errorMessage 
       });
     }
   }

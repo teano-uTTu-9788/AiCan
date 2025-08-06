@@ -67,10 +67,11 @@ class DeploymentServer {
         res.status(result.status === 'failed' ? 500 : 200).json(result);
 
       } catch (error) {
-        logger.error('Deployment endpoint error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Deployment endpoint error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -88,10 +89,11 @@ class DeploymentServer {
         res.json(deployment);
 
       } catch (error) {
-        logger.error('Get deployment status error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Get deployment status error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -105,10 +107,11 @@ class DeploymentServer {
         res.status(result.success ? 200 : 500).json(result);
 
       } catch (error) {
-        logger.error('Rollback endpoint error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Rollback endpoint error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -122,10 +125,11 @@ class DeploymentServer {
         res.json(result);
 
       } catch (error) {
-        logger.error('Rollback simulation error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Rollback simulation error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -137,10 +141,11 @@ class DeploymentServer {
         res.json(deployments);
 
       } catch (error) {
-        logger.error('List deployments error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('List deployments error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -184,10 +189,11 @@ class DeploymentServer {
         }
 
       } catch (error) {
-        logger.error('Webhook endpoint error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Webhook endpoint error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -223,10 +229,11 @@ class DeploymentServer {
         res.json(result);
 
       } catch (error) {
-        logger.error('Example deployment error', { error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Example deployment error', { error: errorMessage });
         res.status(500).json({
           error: 'Internal server error',
-          message: error.message
+          message: errorMessage
         });
       }
     });
@@ -244,7 +251,8 @@ class DeploymentServer {
       });
 
     } catch (error) {
-      logger.error('Failed to start server', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to start server', { error: errorMessage });
       process.exit(1);
     }
   }

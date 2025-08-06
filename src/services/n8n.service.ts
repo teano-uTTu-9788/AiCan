@@ -49,11 +49,12 @@ export class N8nService {
       };
 
     } catch (error) {
-      logger.error(`n8n workflow trigger failed`, { deploymentId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`n8n workflow trigger failed`, { deploymentId, error: errorMessage });
       
       return {
         status: 'failed',
-        logs: this.createDeploymentLogs(artifact, deploymentId, 'failed', error.message),
+        logs: this.createDeploymentLogs(artifact, deploymentId, 'failed', errorMessage),
       };
     }
   }
@@ -77,7 +78,8 @@ export class N8nService {
       }
 
     } catch (error) {
-      logger.error(`Failed to deploy automation workflows`, { deploymentId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to deploy automation workflows`, { deploymentId, error: errorMessage });
       throw error;
     }
   }
@@ -105,7 +107,8 @@ export class N8nService {
       logger.info(`Updated workflow ${workflowId}`, { deploymentId, workflowId });
 
     } catch (error) {
-      logger.error(`Failed to update workflow ${workflowId}`, { deploymentId, workflowId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to update workflow ${workflowId}`, { deploymentId, workflowId, error: errorMessage });
       throw error;
     }
   }
@@ -137,8 +140,9 @@ export class N8nService {
       };
 
     } catch (error) {
-      logger.error(`Failed to check workflow status`, { deploymentId, error: error.message });
-      return { status: 'error', logs: [error.message] };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to check workflow status`, { deploymentId, error: errorMessage });
+      return { status: 'error', logs: [errorMessage] };
     }
   }
 
@@ -200,7 +204,8 @@ export class N8nService {
       };
 
     } catch (error) {
-      logger.error(`Failed to get n8n rollback info`, { deploymentId, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Failed to get n8n rollback info`, { deploymentId, error: errorMessage });
       return {
         canRollback: false,
         previousVersion: null,

@@ -1,0 +1,152 @@
+{
+  "name": "Production Deployment Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deployment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "deployment-webhook",
+      "name": "Deployment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.workflowChecksPassed}}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "check-workflow-status",
+      "name": "Check Workflow Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.vercelWebhookUrl}}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "projectId",
+              "value": "={{$json.projectId}}"
+            },
+            {
+              "name": "deploymentBranch",
+              "value": "={{$json.branch}}"
+            },
+            {
+              "name": "commitSha",
+              "value": "={{$json.commitSha}}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {{$credentials.vercelApi.token}}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "deploy-to-vercel",
+      "name": "Deploy to Vercel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.orchestratorWebhook}}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "deploymentId",
+              "value": "={{$json.deploymentId}}"
+            },
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "vercelUrl",
+              "value": "={{$json.url}}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{new Date().toISOString()}}"
+            }
+          ]
+        }
+      },
+      "id": "notify-orchestrator",
+      "name": "Notify Orchestrator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Deployment completed successfully\", \"url\": \"{{$json.url}}\"}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": false, \"message\": \"Workflow checks have not passed\"}"
+      },
+      "id": "failure-response",
+      "name": "Failure Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 400]
+    }
+  ],
+  "connections": {
+    "Deployment Webhook": {
+      "main": [[{"node": "Check Workflow Status", "type": "main", "index": 0}]]
+    },
+    "Check Workflow Status": {
+      "main": [
+        [{"node": "Deploy to Vercel", "type": "main", "index": 0}],
+        [{"node": "Failure Response", "type": "main", "index": 0}]
+      ]
+    },
+    "Deploy to Vercel": {
+      "main": [[{"node": "Notify Orchestrator", "type": "main", "index": 0}]]
+    },
+    "Notify Orchestrator": {
+      "main": [[{"node": "Success Response", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "timezone": "UTC",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "tags": ["deployment", "production", "vercel"],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T12:00:00.000Z",
+  "versionId": "1"
+}
