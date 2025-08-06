@@ -1,0 +1,148 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test & Quality Assurance
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests with coverage
+      run: npm run test
+      
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(npm run test -- --silent --coverageReporters=text | grep "All files" | awk '{print $10}' | sed 's/%//')
+        echo "Coverage: ${COVERAGE}%"
+        if [ "${COVERAGE}" -lt "90" ]; then
+          echo "❌ Coverage ${COVERAGE}% is below required 90%"
+          exit 1
+        else
+          echo "✅ Coverage ${COVERAGE}% meets requirement"
+        fi
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        
+    - name: Build project
+      run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy to Vercel
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run deployment script
+      run: npm run deploy
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+        NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        
+    - name: Report deployment status
+      run: npm run report-status deployment
+      env:
+        ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+        NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+
+  status-report:
+    runs-on: ubuntu-latest
+    name: Status Report
+    if: always()
+    needs: [test, deploy]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate status report
+      run: npm run report-status ci-cd
+      env:
+        ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL }}
+        NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        
+    - name: Comment PR with status
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const statusFile = 'status.json';
+          
+          if (fs.existsSync(statusFile)) {
+            const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
+            
+            const comment = `## 🤖 Web Development Agent Status Report
+            
+            **Overall Status:** ${status.summary.overall === 'healthy' ? '✅ Healthy' : '⚠️ Needs Attention'}
+            **Test Coverage:** ${status.coverage.percentage}%
+            **Build Status:** ${status.build.status === 'success' ? '✅ Passing' : '❌ Failed'}
+            **Deployment:** ${status.deployment.status === 'ready' ? '🚀 Ready' : '⏳ Pending'}
+            
+            ${status.summary.issues.length > 0 ? 
+              `### Issues Found:\n${status.summary.issues.map(issue => `- ${issue}`).join('\n')}` : 
+              '### No issues found! 🎉'
+            }
+            
+            **Report ID:** ${status.reportId}
+            **Generated:** ${new Date(status.timestamp).toLocaleString()}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
