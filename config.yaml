@@ -1,0 +1,86 @@
+# Configuration for Content & Research Agent
+agent:
+  name: "Content & Research Agent"
+  version: "1.0.0"
+  description: "Sources data from multiple AI services and processes it for content creation"
+
+# Research sources configuration
+research_sources:
+  perplexity:
+    enabled: true
+    model: "perplexity-pro"
+    timeout: 30
+  
+  gemini:
+    enabled: true
+    model: "gemini-pro"
+    timeout: 30
+  
+  grok:
+    enabled: true
+    model: "grok-1"
+    timeout: 30
+
+# Content generation configuration
+content_generation:
+  claude:
+    enabled: true
+    model: "claude-3-opus"
+    max_tokens: 4000
+    temperature: 0.7
+  
+  gpt4o:
+    enabled: true
+    model: "gpt-4o"
+    max_tokens: 4000
+    temperature: 0.7
+
+# Media generation configuration
+media_generation:
+  elevenlabs:
+    enabled: true
+    default_voice: "rachel"
+    model: "eleven_multilingual_v2"
+  
+  synthesia:
+    enabled: true
+    default_avatar: "anna"
+    video_format: "mp4"
+
+# Storage configuration
+storage:
+  notion:
+    enabled: true
+    database_name: "Content Research Database"
+    auto_organize: true
+
+# Quality assurance
+quality_assurance:
+  citation_required: true
+  fact_checking: true
+  duplicate_detection: true
+  tu_orchestrator_integration: true
+
+# Workflow configuration
+workflows:
+  research:
+    steps:
+      - query_perplexity
+      - query_gemini
+      - query_grok
+      - summarize_with_claude
+      - organize_in_notion
+  
+  content_creation:
+    steps:
+      - gather_research
+      - generate_content
+      - review_quality
+      - store_in_notion
+  
+  media_production:
+    steps:
+      - prepare_script
+      - generate_speech
+      - create_video
+      - organize_assets
