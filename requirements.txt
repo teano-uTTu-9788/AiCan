@@ -1,0 +1,29 @@
+# Content & Research Agent Requirements
+
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# AI Service integrations
+openai>=1.0.0          # For GPT-4o integration
+anthropic>=0.3.0       # For Claude integration
+google-generativeai>=0.3.0  # For Gemini integration
+
+# Media generation
+elevenlabs>=0.2.0      # For text-to-speech
+httpx>=0.24.0          # For HTTP requests
+
+# Data storage and organization
+notion-client>=2.0.0   # For Notion integration
+
+# Utilities
+pydantic>=2.0.0        # For data validation
+PyYAML>=6.0            # For configuration files
+click>=8.0.0           # For CLI interface
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
