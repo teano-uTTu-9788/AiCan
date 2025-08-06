@@ -1,0 +1,240 @@
+name: 'AiCan CI/CD Pipeline'
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  NODE_VERSION: '18'
+  ORCHESTRATOR_URL: ${{ secrets.ORCHESTRATOR_URL || 'http://localhost:3000' }}
+
+jobs:
+  test:
+    name: 'Run Tests'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Generate test report
+      if: always()
+      uses: dorny/test-reporter@v1
+      with:
+        name: Jest Tests
+        path: 'test-results.json'
+        reporter: jest-junit
+        
+    - name: Notify orchestrator - tests completed
+      if: always()
+      run: |
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/webhooks/github" \
+          -H "Content-Type: application/json" \
+          -H "X-GitHub-Event: workflow_run" \
+          -d '{
+            "action": "completed",
+            "workflow_run": {
+              "name": "CI Tests",
+              "conclusion": "${{ job.status }}",
+              "head_branch": "${{ github.ref_name }}",
+              "head_sha": "${{ github.sha }}"
+            },
+            "repository": {
+              "full_name": "${{ github.repository }}"
+            }
+          }'
+
+  build:
+    name: 'Build Application'
+    runs-on: ubuntu-latest
+    needs: test
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          dist/
+          build/
+          .next/
+        retention-days: 7
+        
+    - name: Notify orchestrator - build completed
+      run: |
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/webhooks/github" \
+          -H "Content-Type: application/json" \
+          -H "X-GitHub-Event: workflow_run" \
+          -d '{
+            "action": "completed",
+            "workflow_run": {
+              "name": "Build",
+              "conclusion": "success",
+              "head_branch": "${{ github.ref_name }}",
+              "head_sha": "${{ github.sha }}"
+            },
+            "repository": {
+              "full_name": "${{ github.repository }}"
+            }
+          }'
+
+  security-scan:
+    name: 'Security Scan'
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy-preview:
+    name: 'Deploy Preview'
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Trigger preview deployment
+      run: |
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/workflows/trigger/deployment-pipeline" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ORCHESTRATOR_TOKEN }}" \
+          -d '{
+            "event": "manual_deploy",
+            "environment": "preview",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.head_ref }}",
+            "commit_sha": "${{ github.sha }}",
+            "pr_number": "${{ github.event.number }}"
+          }'
+
+  deploy-staging:
+    name: 'Deploy to Staging'
+    runs-on: ubuntu-latest
+    needs: [test, build, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Trigger staging deployment
+      run: |
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/workflows/trigger/deployment-pipeline" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ORCHESTRATOR_TOKEN }}" \
+          -d '{
+            "event": "ci_success",
+            "environment": "staging",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "commit_sha": "${{ github.sha }}"
+          }'
+          
+    - name: Wait for deployment
+      run: |
+        echo "Deployment triggered, check orchestrator for status"
+        echo "Dashboard: ${{ env.ORCHESTRATOR_URL }}/health"
+
+  deploy-production:
+    name: 'Deploy to Production'
+    runs-on: ubuntu-latest
+    needs: [test, build, security-scan]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Trigger production deployment
+      run: |
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/workflows/trigger/deployment-pipeline" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.ORCHESTRATOR_TOKEN }}" \
+          -d '{
+            "event": "manual_deploy",
+            "environment": "production",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "commit_sha": "${{ github.sha }}",
+            "manual_trigger": true
+          }'
+
+  notify-completion:
+    name: 'Notify Completion'
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify workflow completion
+      run: |
+        STATUS="${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}"
+        curl -X POST "${{ env.ORCHESTRATOR_URL }}/webhooks/github" \
+          -H "Content-Type: application/json" \
+          -H "X-GitHub-Event: workflow_run" \
+          -d "{
+            \"action\": \"completed\",
+            \"workflow_run\": {
+              \"name\": \"AiCan CI/CD Pipeline\",
+              \"conclusion\": \"$STATUS\",
+              \"head_branch\": \"${{ github.ref_name }}\",
+              \"head_sha\": \"${{ github.sha }}\"
+            },
+            \"repository\": {
+              \"full_name\": \"${{ github.repository }}\"
+            }
+          }"
