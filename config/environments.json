@@ -1,0 +1,97 @@
+{
+  "development": {
+    "orchestrator": {
+      "host": "localhost",
+      "port": 3000,
+      "logLevel": "debug"
+    },
+    "n8n": {
+      "host": "localhost",
+      "port": 5678,
+      "protocol": "http",
+      "basicAuth": {
+        "user": "admin",
+        "password": "admin"
+      }
+    },
+    "vercel": {
+      "apiUrl": "https://api.vercel.com",
+      "timeout": 60000
+    },
+    "github": {
+      "apiUrl": "https://api.github.com",
+      "timeout": 30000
+    },
+    "notifications": {
+      "channels": ["console"],
+      "slack": {
+        "enabled": false
+      },
+      "email": {
+        "enabled": false
+      }
+    },
+    "workflows": {
+      "retryAttempts": 3,
+      "retryDelay": 5000,
+      "timeout": 300000
+    }
+  },
+  "staging": {
+    "orchestrator": {
+      "host": "0.0.0.0",
+      "port": 3000,
+      "logLevel": "info"
+    },
+    "n8n": {
+      "host": "n8n",
+      "port": 5678,
+      "protocol": "http"
+    },
+    "notifications": {
+      "channels": ["console", "slack"],
+      "slack": {
+        "enabled": true
+      },
+      "email": {
+        "enabled": false
+      }
+    },
+    "workflows": {
+      "retryAttempts": 5,
+      "retryDelay": 10000,
+      "timeout": 600000
+    }
+  },
+  "production": {
+    "orchestrator": {
+      "host": "0.0.0.0",
+      "port": 3000,
+      "logLevel": "warn"
+    },
+    "n8n": {
+      "host": "n8n",
+      "port": 5678,
+      "protocol": "https"
+    },
+    "notifications": {
+      "channels": ["slack", "email"],
+      "slack": {
+        "enabled": true
+      },
+      "email": {
+        "enabled": true
+      }
+    },
+    "workflows": {
+      "retryAttempts": 5,
+      "retryDelay": 15000,
+      "timeout": 900000
+    },
+    "security": {
+      "enableWebhookSignatureValidation": true,
+      "enableRateLimiting": true,
+      "enableCors": false
+    }
+  }
+}

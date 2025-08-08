@@ -1,0 +1,276 @@
+{
+  "name": "AiCan Vercel Deployment Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vercel-deploy",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "deployment-webhook",
+      "name": "Deployment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "vercel-deploy"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.environment }}",
+              "operation": "equal",
+              "value2": "production"
+            }
+          ]
+        }
+      },
+      "id": "environment-check",
+      "name": "Production Deploy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.vercel.com/v13/deployments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.VERCEL_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "aican-production"
+            },
+            {
+              "name": "gitSource",
+              "value": "={{ { \"type\": \"github\", \"repo\": $json.repository, \"ref\": $json.branch || \"main\" } }}"
+            },
+            {
+              "name": "target",
+              "value": "production"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "production-deploy",
+      "name": "Deploy to Production",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.vercel.com/v13/deployments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.VERCEL_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ \"aican-\" + ($json.environment || \"preview\") }}"
+            },
+            {
+              "name": "gitSource",
+              "value": "={{ { \"type\": \"github\", \"repo\": $json.repository, \"ref\": $json.branch || \"main\" } }}"
+            },
+            {
+              "name": "target",
+              "value": "preview"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "preview-deploy",
+      "name": "Deploy to Preview/Staging",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "wait-for-deployment",
+      "name": "Wait for Deployment",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ \"https://api.vercel.com/v13/deployments/\" + $node['Deploy to Production'].json.uid || $node['Deploy to Preview/Staging'].json.uid }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.VERCEL_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-deployment-status",
+      "name": "Check Deployment Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $node['Deployment Webhook'].json.orchestrator_webhook_url }}/webhooks/n8n/vercel-deployment",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "deployment_completed"
+            },
+            {
+              "name": "success",
+              "value": "={{ $node['Check Deployment Status'].json.readyState === 'READY' }}"
+            },
+            {
+              "name": "deployment",
+              "value": "={{ $node['Check Deployment Status'].json }}"
+            },
+            {
+              "name": "environment",
+              "value": "={{ $node['Deployment Webhook'].json.environment }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-orchestrator",
+      "name": "Notify Orchestrator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"success\", \"deployment_url\": $node['Check Deployment Status'].json.url, \"deployment_id\": $node['Check Deployment Status'].json.uid, \"ready_state\": $node['Check Deployment Status'].json.readyState } }}"
+      },
+      "id": "deployment-response",
+      "name": "Deployment Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Deployment Webhook": {
+      "main": [
+        [
+          {
+            "node": "Production Deploy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Production Deploy?": {
+      "main": [
+        [
+          {
+            "node": "Deploy to Production",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Deploy to Preview/Staging",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deploy to Production": {
+      "main": [
+        [
+          {
+            "node": "Wait for Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deploy to Preview/Staging": {
+      "main": [
+        [
+          {
+            "node": "Wait for Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Deployment": {
+      "main": [
+        [
+          {
+            "node": "Check Deployment Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Deployment Status": {
+      "main": [
+        [
+          {
+            "node": "Notify Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Deployment Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "versionId": "1"
+}
