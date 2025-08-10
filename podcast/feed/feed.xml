@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+  xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>Ai/O Daily: Cartalk‑Style MedEd</title>
+    <link>https://aicanre.org/aio</link>
+    <language>en</language>
+    <itunes:author>Ai/O</itunes:author>
+    <itunes:category text="Education">
+      <itunes:category text="Courses"/>
+    </itunes:category>
+    <description>8‑minute, Car Talk‑style medical learning with mnemonics, quizzes, and banter.</description>
+    <itunes:image href="https://aicanre.org/assets/aio-cover-3000.png"/>
+    <itunes:explicit>false</itunes:explicit>
+
+    <item>
+      <title>Ep‑000 — What is Ai/O? (Pilot)</title>
+      <guid isPermaLink="false">aio-000</guid>
+      <pubDate>Sun, 10 Aug 2025 08:00:00 GMT</pubDate>
+      <!-- 'length' should reflect the actual file size in bytes. Placeholder value used here. -->
+      <enclosure url="https://cdn.aicanre.org/podcast/aio-000.m4a" length="12345678" type="audio/mp4"/>
+      <itunes:duration>00:08:00</itunes:duration>
+      <description><![CDATA[Show intro, format, and a quick clinical memory palace. Full transcript at the link.]]></description>
+      <podcast:transcript url="https://cdn.aicanre.org/podcast/aio-000.en.vtt" type="text/vtt" language="en"/>
+      <podcast:transcript url="https://cdn.aicanre.org/podcast/aio-000.vi.vtt" type="text/vtt" language="vi"/>
+    </item>
+  </channel>
+</rss>
