@@ -1,0 +1,24 @@
+{
+  "guid": "aio-000",
+  "title": "Ep-000 — What is Ai/O? (Pilot)",
+  "pubDate": "Sun, 10 Aug 2025 08:00:00 GMT",
+  "enclosure": {
+    "url": "https://cdn.aicanre.org/podcast/aio-000.m4a",
+    "length": "12345678",
+    "type": "audio/mp4"
+  },
+  "duration": "00:08:00",
+  "description": "Show intro, format, and a quick clinical memory palace. Full transcript at the link.",
+  "transcripts": [
+    {
+      "url": "https://cdn.aicanre.org/podcast/aio-000.en.vtt",
+      "type": "text/vtt",
+      "language": "en"
+    },
+    {
+      "url": "https://cdn.aicanre.org/podcast/aio-000.vi.vtt",
+      "type": "text/vtt",
+      "language": "vi"
+    }
+  ]
+}
