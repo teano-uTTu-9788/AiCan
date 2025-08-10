@@ -1,0 +1,16 @@
+{
+  "name": "aio-podcast",
+  "version": "1.0.0",
+  "description": "Podcast feed builder and tests",
+  "type": "module",
+  "scripts": {
+    "build:feed": "node build_feed.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.2.4"
+  },
+  "devDependencies": {
+    "vitest": "^0.34.0"
+  }
+}
