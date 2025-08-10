@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "title": "Ai/O Daily: Cartalk-Style MedEd",
+  "link": "https://aicanre.org/aio",
+  "language": "en",
+  "author": "Ai/O",
+  "categories": ["Education", "Courses"],
+  "description": "8-minute, Car Talk-style medical learning with mnemonics, quizzes, and banter.",
+  "image": "https://aicanre.org/assets/aio-cover-3000.png",
+  "explicit": false
+}
