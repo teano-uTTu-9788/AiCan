@@ -2,8 +2,7 @@
   "name": "aio-podcast",
   "version": "1.0.0",
   "description": "Podcast feed builder and tests",
-  
-  scripts": {
+  "scripts": {
     "build:feed": "node build_feed.js",
     "test": "vitest run"
   },
