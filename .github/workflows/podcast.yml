@@ -14,12 +14,12 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        # Install vitest and fast-xml-parser without specifying a version.
-        # Using @latest in the version spec caused npm to parse the
-        # version incorrectly in GitHub Actions, so we omit it here.
+        # Install vitest and fast-xml-parser globally to avoid version resolution issues.
+        # Installing globally bypasses the need for a local package.json and resolves
+        # peer dependency conflicts that were causing "Invalid Version" errors.
         run: |
-          npm install vitest --legacy-peer-deps
-          npm install fast-xml-parser --legacy-peer-deps
+          npm install -g vitest
+          npm install -g fast-xml-parser
       - name: Build RSS feed
         run: node podcast/build_feed.js
       - name: Run tests
