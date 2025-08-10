@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: npm install vitest fast-xml-parser
+        run: npm install vitest fast-xml-parser --legacy-peer-deps
       - name: Build RSS feed
         run: node podcast/build_feed.js
       - name: Run tests
